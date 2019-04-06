@@ -4,6 +4,7 @@ Sebelum dimulai beberapa hal yang sudah harus dipersiapkan:
 2. Memiliki akses root pada kedua server.
 3. Sudah tersedia tomcat 7 server pada kedua node.
 
+
 Step 1 — Konfigurasi nama host (seting pada kedua server)
   $ sudo nano /etc/hosts
  -----------------------------------------
@@ -17,6 +18,7 @@ Step 1 — Konfigurasi nama host (seting pada kedua server)
  Dari node2:
   $ ping node1
 
+
 Step 2 — Instal Pacemaker (seting pada kedua server)
   Instalasi pacemake dan pcs cluster shell, (pcs) akan digunakan untuk mengkonfigurasi cluster nantinya.
     $ sudo yum install pacemaker pcs
@@ -24,5 +26,59 @@ Step 2 — Instal Pacemaker (seting pada kedua server)
     $ sudo systemctl start pcsd.service
   Aktifkan service PCS, sehingga saat reboot service sudah berjalan:
     $ sudo systemctl enable pcsd.service
+  Setelah instalasi, secara automatis dibuatkan user baru hacluster, supaya user dapat digunakan harus ditentukan passwordnya:
+    $ sudo passwd hacluster
+ 
+ Step 3 - Konfigurasi Pacemaker (seting pada kedua server)
+  Pastikan bahwa kedua node dapat berkomunikasi dengan cara menambahkan rule pada firewalld:
+  Cek apakah firewalld service sudah aktif:
+    $ sudo firewall-cmd --state
+  Jika belum aktif aktifkan:
+    $ sudo systemctl start firewalld.service
+  Tambahkan firewall rule untuk high-availability:
+    $ sudo firewall-cmd --permanent --add-service=high-availability
+  Agar rule yang ditambahkan dapat berjalan perlu dilakukan reload konfigurasinya:
+    $ sudo firewall-cmd --reload
+  Saat ini kedua host sudah bisa berkomunikasi, selanjutnya diperlukan setup authentication untuk kedua node dengan perintah pada (node1) saja:
+    $ sudo pcs cluster auth node01 node02
+      Username: hacluster
+  Output yang dihasilkan:
+      node01: Authorized
+      node02: Authorized
+  Selanjutnya, buat dan sinkronkan konfigurasi Corosync pada host yang sama. 
+  Di sini, diberi nama cluster tomcluster, tetapi dapat diberi nama apa pun yang disukai.
+    $ sudo pcs cluster setup --name tomcluster node01 node02
+  output:
+    Output
+    Shutting down pacemaker/corosync services...
+    Redirecting to /bin/systemctl stop  pacemaker.service
+    Redirecting to /bin/systemctl stop  corosync.service
+    Killing any remaining services...
+    Removing all cluster configuration files...
+    node01: Succeeded
+    node02: Succeeded
+  Konfigurasi Corosync secara otomatis dibuat dan didistribusikan ke semua node 
+  dan file konfigurasinya disimpan di file /etc/corosync/corosync.conf.
+  
+Step 4 — Memulai Cluster (jalankan hanya pada node01)
+  Cluster dapat di start dengan menjalankan perintah berikut, cukup pada node01:
+    $ sudo pcs cluster start --all
+  Agar Pacemaker & corosync dapat start pada saat booting, service keduanya harus diaktifkan pada kedua node:
+    $ sudo systemctl enable corosync.service
+    $ sudo systemctl enable pacemaker.service
+  Untuk melihat apakah cluster sudah berjalan, dapat dilakukan perintah berikut:
+    $ sudo pcs status
+  Output:
+    Output
+    . . .
+    Online: [ node01 node02 ]
+    Full list of resources:
 
-
+    PCSD Status:
+      node01: Online
+      node02: Online
+    Daemon Status:
+      corosync: active/enabled
+      pacemaker: active/enabled
+      pcsd: active/enabled
+      
