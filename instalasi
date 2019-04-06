@@ -1,0 +1,28 @@
+Prerequisites
+Sebelum dimulai beberapa hal yang sudah harus dipersiapkan:
+1. Dua(2) CentOS 7 Droplets, yang akan menjadi cluster nodes. node01 (IP address: 192.168.2.80) dan node02 (IP address: 192.168.2.81).
+2. Memiliki akses root pada kedua server.
+3. Sudah tersedia tomcat 7 server pada kedua node.
+
+Step 1 — Konfigurasi nama host (seting pada kedua server)
+  $ sudo nano /etc/hosts
+ -----------------------------------------
+| /etc/hosts                              |
+| 192.168.2.80 node01.company.com node01  |
+| 192.168.2.81 node02.company.com node02  |
+ -----------------------------------------
+ Pastikan dari node01 dapat terhubung dengan node02, demikian sebaliknya:
+ Dari node1:
+  $ ping node2
+ Dari node2:
+  $ ping node1
+
+Step 2 — Instal Pacemaker (seting pada kedua server)
+  Instalasi pacemake dan pcs cluster shell, (pcs) akan digunakan untuk mengkonfigurasi cluster nantinya.
+    $ sudo yum install pacemaker pcs
+  Jalankan pcs daemon pada kedua server:
+    $ sudo systemctl start pcsd.service
+  Aktifkan service PCS, sehingga saat reboot service sudah berjalan:
+    $ sudo systemctl enable pcsd.service
+
+
