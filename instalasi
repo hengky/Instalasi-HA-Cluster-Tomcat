@@ -82,3 +82,26 @@ Step 4 — Memulai Cluster (jalankan hanya pada node01)
       pacemaker: active/enabled
       pcsd: active/enabled
       
+Step 5 — Disable STONITH dan Quorum
+  Sebelum menambahkan resource ke cluster kita, kita perlu mematikan STONITH (Shoot The Other Node In The Head), 
+  karena kita tidak menggunakan parameter ini.
+  $ sudo pcs property set stonith-enabled=false
+
+  Cluster memiliki quorum ketika lebih dari setengah node sedang online. 
+  Perilaku default Pacemaker adalah untuk menghentikan semua resource jika cluster tidak memiliki quorum. 
+  Namun, ini tidak bisa diberlukan jika  dalam cluster hanya dua-node; 
+  Cluster akan kehilangan quorum jika satu node gagal, maka perlu kita perlu kita non aktifkan:
+  $ pcs property set no-quorum-policy=ignore
+  
+ Step 6 — Konfigurasi Virtual IP address
+  Untuk selanjutnya kita akan menggunakan pcs shell cukup pada salah satu host, boleh node1 atau node2. 
+  Cluster Pacemaker sekarang aktif dan berjalan dan kita dapat menambahkan resource pertama ke dalamnya, 
+  yang merupakan  virtualIP. Untuk melakukan ini, 
+  kita akan konfigurasi ocf:heartbeat:IPaddr2, 
+  tetapi pertama-tama, mari kita bahas beberapa terminologi berikut:
+  
+  
+  
+  
+  
+  
