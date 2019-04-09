@@ -85,20 +85,75 @@ Step 4 — Memulai Cluster (jalankan hanya pada node01)
 Step 5 — Disable STONITH dan Quorum
   Sebelum menambahkan resource ke cluster kita, kita perlu mematikan STONITH (Shoot The Other Node In The Head), 
   karena kita tidak menggunakan parameter ini.
-  $ sudo pcs property set stonith-enabled=false
+    $ sudo pcs property set stonith-enabled=false
 
   Cluster memiliki quorum ketika lebih dari setengah node sedang online. 
   Perilaku default Pacemaker adalah untuk menghentikan semua resource jika cluster tidak memiliki quorum. 
   Namun, ini tidak bisa diberlukan jika  dalam cluster hanya dua-node; 
   Cluster akan kehilangan quorum jika satu node gagal, maka perlu kita perlu kita non aktifkan:
-  $ pcs property set no-quorum-policy=ignore
+    $ pcs property set no-quorum-policy=ignore
   
  Step 6 — Konfigurasi Virtual IP address
   Untuk selanjutnya kita akan menggunakan pcs shell cukup pada salah satu host, boleh node1 atau node2. 
-  Cluster Pacemaker sekarang aktif dan berjalan dan kita dapat menambahkan resource pertama ke dalamnya, 
-  yang merupakan  virtualIP. Untuk melakukan ini, 
-  kita akan konfigurasi ocf:heartbeat:IPaddr2, 
+  Cluster Pacemaker sekarang aktif dan berjalan selanjutnya kita dapat menambahkan resource pertama ke dalamnya, 
+  yang merupakan  virtualIP. Untuk melakukan ini, kita akan konfigurasi ocf:heartbeat:IPaddr2, 
   tetapi pertama-tama, mari kita bahas beberapa terminologi berikut:
+  Setiap resource agent memiliki tiga atau dua bagian yang dipisahkan oleh titik dua(:)
+    - Kolom pertama adalah resource, yang merupakan standar yang sesuai dengan resource agent. 
+      Ini juga memberi tahu Pacemaker di mana menemukan skrip. 
+      Resource agent IPaddr2 sesuai dengan standar OCF (Open Cluster Framework).      
+    - Kolom kedua tergantung pada standar. Sumberdaya OCF menggunakan kolom kedua untuk namespace OCF.
+    - Kolom ketiga adalah nama dari resource agent.
+  Resouce dapat memiliki meta atribut dan atribut instance. Meta-atribut tidak tergantung pada tipe resource; 
+  instance atribut  adalah agen spesifik resource. 
+  Satu-satunya atribut instance yang diperlukan dari resource agent ini adalah ip (alamat IP virtual), 
+  tetapi untuk alasan eksplisit kami juga akan menetapkan cidr_netmask (subnetmask dalam notasi CIDR).
+  
+  Resource operations adalah tindakan yang dapat dilakukan cluster pada resource(mis. Mulai, berhenti, monitor). 
+  Mereka ditunjukkan oleh kata kunci op. Kami akan menambahkan operasi monitor dengan interval 20 detik 
+  sehingga cluster memeriksa setiap 20 detik jika sumber daya masih sehat/hidup. 
+  Apa yang dianggap sehat tergantung pada agen sumber daya.
+  Selanjutnya, kita akan membuat sumber daya alamat IP virtual. 
+  Di sini, kita akan menggunakan 192.168.2.83 sebagai IP virtual dan Cluster_VIP untuk nama resource.
+    $ pcs resource create Cluster_VIP ocf:heartbeat:IPaddr2 ip=192.168.2.83 cidr_netmask=24 op monitor interval=20s
+  Setelah kita jalankan perintah diatas, kita cek status resource degan perintah berikut:
+    $ pcs status
+  Hasilnya:
+    Output
+    ...
+    Full list of resources:
+    Cluster_VIP    (ocf::heartbeat:IPaddr2):   Started node01
+    ...
+  Dari hasil diatas dapat diartikan yang aktif untuk virtualIP saat ini adalah node01.
+  
+Step 7 — Menambahkan Tomcat Resource
+  Sekarang kita akan  menambahkan Tomcat sebagai resource kedua ke cluster. 
+  Reource Agent dari layanan ini adalah ocf:heartbeat:tomcat.
+  Diberi nama TomServer resource dan mengatur atribut instance file konfigurasi dari tomcat 
+  serta  menggunakan interval monitor setiap 20 detik, seperti contoh perintah dibawah:
+    $ pcs resource create tomcat ocf:heartbeat:tomcat java_home="/usr/lib/jvm/jre" catalina_home="/opt/tomcat" tomcat_user="tomcat" op monitor interval="20s"
+
+  Setelah kita jalankan perintah diatas, kita cek status resource degan perintah berikut:
+    $ pcs status
+  Hasilnya:
+    Output
+    ...
+    Full list of resources:
+    Cluster_VIP    (ocf::heartbeat:IPaddr2):   Started node01
+    tomServer  (ocf::heartbeat:apache):    Started node02
+    ...
+  Seperti output diatas, resource berjalan di host yang berbeda. 
+  Pacemaker belum diberitahu bahwa resource harus berjalan pada host yang sama, sehingga didistribusikan secara merata di seluruh node.
+  *** Sebagai catatan kita dapat 
+      Untuk merestart tomcat jangan gunakan systemctl, tapi gunakan pcs resource restart tomServer
+  ***
+  
+  
+ 
+
+
+  
+
   
   
   
