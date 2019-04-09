@@ -144,19 +144,42 @@ Step 7 — Menambahkan Tomcat Resource
     ...
   Seperti output diatas, resource berjalan di host yang berbeda. 
   Pacemaker belum diberitahu bahwa resource harus berjalan pada host yang sama, sehingga didistribusikan secara merata di seluruh node.
-  *** Sebagai catatan kita dapat 
+  Agar resource harus berjalan pada host yang sama, maka perlu dilakukan konfigurasi Colocation Constraints seperti step 8 berikut.
+  
+  
+  Step 8 — Konfigurasi Colocation Constraints
+    Hampir setiap keputusan dalam pacemaker cluster, seperti memilih di mana resource harus dijalankan, 
+    dilakukan dengan membandingkan skor. Skor dihitung per resource, dan resource namager cluster memilih node dengan skor tertinggi untuk resource tertentu. 
+    (Jika sebuah node memiliki skor negatif untuk suatu resource, resource tidak dapat berjalan pada node itu.)
+    
+    Kita dapat memanipulasi keputusan cluster dengan constrain. Constrain memiliki skor. 
+    Jika constrain memiliki skor lebih rendah dari INFINITY, itu hanya rekomendasi. 
+    Skor INFINITY berarti itu suatu keharusan.
+    Kami ingin memastikan bahwa kedua resource dijalankan pada host yang sama, 
+    jadi akan didefinisikan kendala colocation dengan skor INFINITY.
+      $ pcs constraint colocation add WebServer Cluster_VIP INFINITY
+    
+    Urutan resource dalam definisi constrain adalah penting. 
+    Di sini, ditetapkan bahwa resource Tomcat (TomServer) harus dijalankan pada host yang sama dengan IP virtual (Cluster_VIP) aktif. 
+    Ini juga berarti bahwa WebSite tidak diizinkan berjalan di mana pun jika Cluster_VIP tidak aktif.
+    
+   Untuk melihat kedua resource berjalan pada host yang sama kita bisa jalankan perintah: 
+     $ pcs status
+    Hasilnya:
+      Output
+      ...
+      Full list of resources:
+      Cluster_VIP    (ocf::heartbeat:IPaddr2):   Started node01
+      WebServer  (ocf::heartbeat:tomcat):    Started node01
+      ...
+    Dapat dilihat pada output diatas, kedua resource berjalan pada host yang sama.
+
+*** Sebagai catatan kita dapat 
       Untuk merestart tomcat jangan gunakan systemctl, tapi gunakan pcs resource restart tomServer
-  ***
-  
-  
- 
+***
 
-
-  
-
-  
-  
-  
-  
-  
-  
+KESIMPULAN
+  Saat ini kita telah memiliki dua server tomcat (node01 dan node02) yang berjalan secara hot-stanby atau active-passive cluster.
+  Saat ini kita dapat mengkonfigurasi tomcat lebih lanjut, tetapi pastikan untuk menyinkronkan konfigurasi di seluruh host.
+  Akan lebih baik lagi jika kedua node disingkronkan menggunakan semacam rsync atau  csync2.
+  Semoga bermanfaat. Salam Goblok karena goblok kita harus belajar!!!
